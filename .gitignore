@@ -1,0 +1,57 @@
+# General Node.js ignores
+node_modules/
+dist/
+build/
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Packages
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# OS generated files
+.DS_Store*
+Thumbs.db
+ehthumbs.db
+
+# Editor & IDE temporary files
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Dependency directories
+jspm_packages/
+web_modules/
+
+# Optional: Ignore files that are only relevant to specific editors/IDEs
+# .idea/
+# .vscode/
+# *.suo
+# *.ntvs*
+# *.njsproj
+# *.sln
+
+# Temporary files created by tooling
+.rpt2_cache/
+.next/
+.parcel-cache/
+.cache/

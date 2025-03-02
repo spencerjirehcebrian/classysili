@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raspberry Pi Image Classifier</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+      :root {
+        --primary: #4361ee;
+        --primary-dark: #3a56d4;
+        --secondary: #2ec4b6;
+        --dark: #343a40;
+        --light: #f8f9fa;
+        --danger: #e63946;
+        --success: #2a9d8f;
+        --gray: #6c757d;
+        --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        --transition: all 0.3s ease;
+      }
+      
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f0f2f5;
+        color: var(--dark);
+        line-height: 1.6;
+        padding: 0;
+        margin: 0;
+      }
+      
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      
+      header {
+        background-color: var(--primary);
+        color: white;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+      }
+      
+      h1 {
+        font-weight: 600;
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+      }
+      
+      header p {
+        font-size: 1rem;
+        opacity: 0.9;
+      }
+      
+      .main-content {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+      
+      @media (min-width: 768px) {
+        .main-content {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      
+      .card {
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: var(--transition);
+      }
+      
+      .card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        transform: translateY(-5px);
+      }
+      
+      .card-header {
+        background-color: var(--primary);
+        color: white;
+        padding: 1rem;
+        font-weight: 600;
+        font-size: 1.2rem;
+        display: flex;
+        align-items: center;
+      }
+      
+      .card-header i {
+        margin-right: 10px;
+      }
+      
+      .card-body {
+        padding: 1.5rem;
+      }
+      
+      #webcam-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      #webcam-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #e9ecef;
+        border-radius: 8px;
+        width: 100%;
+        height: 300px;
+        color: var(--gray);
+      }
+      
+      #webcam-placeholder i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+      }
+      
+      #webcam-image {
+        max-width: 100%;
+        border-radius: 8px;
+        display: none;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      
+      .actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        justify-content: center;
+      }
+      
+      .btn {
+        padding: 0.8rem 1.5rem;
+        border: none;
+        border-radius: 50px;
+        cursor: pointer;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+        font-size: 1rem;
+        gap: 0.5rem;
+      }
+      
+      .btn:focus {
+        outline: none;
+      }
+      
+      .btn-primary {
+        background-color: var(--primary);
+        color: white;
+      }
+      
+      .btn-primary:hover {
+        background-color: var(--primary-dark);
+      }
+      
+      .btn-secondary {
+        background-color: var(--secondary);
+        color: white;
+      }
+      
+      .btn-secondary:hover {
+        background-color: #25a99d;
+      }
+      
+      .btn-danger {
+        background-color: var(--danger);
+        color: white;
+      }
+      
+      .btn-danger:hover {
+        background-color: #d62b39;
+      }
+      
+      .btn:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+      }
+      
+      .result-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        transition: var(--transition);
+      }
+      
+      .result-item:hover {
+        background-color: #f8f9fa;
+        transform: translateX(5px);
+      }
+      
+      .class-name {
+        width: 130px;
+        font-weight: 600;
+        color: var(--dark);
+      }
+      
+      .progress-container {
+        flex-grow: 1;
+        position: relative;
+      }
+      
+      .progress-bar {
+        background-color: #e9ecef;
+        height: 15px;
+        border-radius: 50px;
+        overflow: hidden;
+      }
+      
+      .progress-fill {
+        height: 100%;
+        border-radius: 50px;
+        transition: width 0.5s ease;
+      }
+      
+      .confidence-high {
+        background-color: var(--success);
+      }
+      
+      .confidence-medium {
+        background-color: #f4a261;
+      }
+      
+      .confidence-low {
+        background-color: #e9c46a;
+      }
+      
+      .progress-text {
+        position: absolute;
+        right: 0;
+        top: -25px;
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      
+      .status {
+        text-align: center;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: none;
+      }
+      
+      .status.success {
+        background-color: rgba(42, 157, 143, 0.1);
+        color: var(--success);
+        border: 1px solid var(--success);
+      }
+      
+      .status.error {
+        background-color: rgba(230, 57, 70, 0.1);
+        color: var(--danger);
+        border: 1px solid var(--danger);
+      }
+      
+      .status.loading {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary);
+        border: 1px solid var(--primary);
+      }
+      
+      .spinner {
+        display: inline-block;
+        width: 1.5rem;
+        height: 1.5rem;
+        border: 3px solid rgba(67, 97, 238, 0.3);
+        border-radius: 50%;
+        border-top-color: var(--primary);
+        animation: spin 1s linear infinite;
+        margin-right: 0.5rem;
+      }
+      
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      
+      .no-results {
+        text-align: center;
+        padding: 2rem;
+        color: var(--gray);
+      }
+      
+      footer {
+        text-align: center;
+        margin-top: 3rem;
+        padding: 1rem;
+        color: var(--gray);
+        font-size: 0.9rem;
+      }
+      
+      .tooltip {
+        position: relative;
+        display: inline-block;
+        margin-left: 0.5rem;
+      }
+      
+      .tooltip .tooltiptext {
+        visibility: hidden;
+        width: 200px;
+        background-color: var(--dark);
+        color: white;
+        text-align: center;
+        border-radius: 6px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;
+        left: 50%;
+        transform: translateX(-50%);
+        opacity: 0;
+        transition: opacity 0.3s;
+        font-size: 0.8rem;
+        font-weight: normal;
+      }
+      
+      .tooltip:hover .tooltiptext {
+        visibility: visible;
+        opacity: 1;
+      }
+      
+      .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 50px;
+        background-color: var(--primary);
+        color: white;
+        font-size: 0.75rem;
+        margin-left: 0.5rem;
+      }
+      
+      /* Animations */
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      
+      .fade-in {
+        animation: fadeIn 0.5s ease-in;
+      }
+      
+      @keyframes slideUp {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      
+      .slide-up {
+        animation: slideUp 0.3s ease-out;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1><i class="fas fa-robot"></i> Raspberry Pi Image Classifier</h1>
+      <p>Real-time image classification using TensorFlow.js and Node.js</p>
+    </header>
+
+    <div class="container">
+      <div id="status-container"></div>
+      
+      <div class="main-content">
+        <div class="card slide-up">
+          <div class="card-header">
+            <i class="fas fa-camera"></i> Camera Input
+          </div>
+          <div class="card-body">
+            <div id="webcam-container">
+              <div id="webcam-placeholder">
+                <i class="fas fa-camera-retro"></i>
+                <p>No image captured yet</p>
+              </div>
+              <img id="webcam-image" src="" alt="Captured image will appear here" />
+            </div>
+            
+            <div class="actions">
+              <button id="classify-btn" class="btn btn-primary">
+                <i class="fas fa-camera"></i> Capture and Classify
+              </button>
+              <button id="reset-btn" class="btn btn-secondary" style="display: none;">
+                <i class="fas fa-redo"></i> Reset
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card slide-up">
+          <div class="card-header">
+            <i class="fas fa-chart-bar"></i> Classification Results
+            <div class="tooltip">
+              <i class="fas fa-info-circle"></i>
+              <span class="tooltiptext">Results show the confidence level for each class. Higher percentages indicate stronger matches.</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div id="results">
+              <div class="no-results">
+                <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                <p>Capture an image to see classification results</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <footer>
+      <p>Powered by TensorFlow.js and Node.js on Raspberry Pi</p>
+      <p>Model: <span id="model-info">Custom image classifier with 4 classes</span></p>
+    </footer>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const classifyBtn = document.getElementById("classify-btn");
+      const resetBtn = document.getElementById("reset-btn");
+      const resultsDiv = document.getElementById("results");
+      const webcamImage = document.getElementById("webcam-image");
+      const webcamPlaceholder = document.getElementById("webcam-placeholder");
+      const statusContainer = document.getElementById("status-container");
+      
+      // Function to show status messages
+      function showStatus(message, type = 'loading') {
+        const statusDiv = document.createElement('div');
+        statusDiv.className = `status ${type} fade-in`;
+        
+        if (type === 'loading') {
+          statusDiv.innerHTML = `<div class="spinner"></div> ${message}`;
+        } else {
+          const icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+          statusDiv.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+        }
+        
+        statusContainer.innerHTML = '';
+        statusContainer.appendChild(statusDiv);
+        statusDiv.style.display = 'block';
+        
+        if (type !== 'loading') {
+          setTimeout(() => {
+            statusDiv.style.opacity = '0';
+            setTimeout(() => statusDiv.remove(), 500);
+          }, 3000);
+        }
+      }
+      
+      // Classify button click handler
+      classifyBtn.addEventListener("click", () => {
+        classifyBtn.disabled = true;
+        showStatus("Processing image...");
+        socket.emit("classify");
+      });
+      
+      // Reset button click handler
+      resetBtn.addEventListener("click", () => {
+        webcamImage.style.display = "none";
+        webcamPlaceholder.style.display = "flex";
+        resetBtn.style.display = "none";
+        resultsDiv.innerHTML = `
+          <div class="no-results">
+            <i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+            <p>Capture an image to see classification results</p>
+          </div>
+        `;
+      });
+      
+      // Handle classification results
+      socket.on("classification-result", (data) => {
+        classifyBtn.disabled = false;
+        
+        if (data.error) {
+          showStatus(`Error: ${data.error}`, 'error');
+          return;
+        }
+        
+        showStatus("Classification complete!", 'success');
+        
+        // Display the captured image
+        webcamImage.src = data.imageBase64;
+        webcamImage.style.display = "block";
+        webcamPlaceholder.style.display = "none";
+        resetBtn.style.display = "inline-flex";
+        
+        // Display results
+        resultsDiv.innerHTML = "<h3>Classification Results:</h3>";
+        
+        data.results.forEach((result) => {
+          const percentage = (result.score * 100).toFixed(2);
+          let confidenceClass = 'confidence-low';
+          
+          if (percentage > 75) {
+            confidenceClass = 'confidence-high';
+          } else if (percentage > 50) {
+            confidenceClass = 'confidence-medium';
+          }
+          
+          const resultItem = document.createElement("div");
+          resultItem.className = "result-item slide-up";
+          
+          // Add a badge for the top result
+          let classBadge = '';
+          if (result === data.results[0]) {
+            classBadge = '<span class="badge">Top Match</span>';
+          }
+          
+          resultItem.innerHTML = `
+            <div class="class-name">${result.class}${classBadge}</div>
+            <div class="progress-container">
+              <div class="progress-text">${percentage}%</div>
+              <div class="progress-bar">
+                <div class="progress-fill ${confidenceClass}" style="width: ${percentage}%"></div>
+              </div>
+            </div>
+          `;
+          
+          resultsDiv.appendChild(resultItem);
+        });
+      });
+      
+      // Connection status events
+      socket.on('connect', () => {
+        showStatus('Connected to server', 'success');
+      });
+      
+      socket.on('disconnect', () => {
+        showStatus('Disconnected from server', 'error');
+      });
+      
+      socket.on('connect_error', () => {
+        showStatus('Connection error', 'error');
+      });
+    </script>
+  </body>
+</html>
